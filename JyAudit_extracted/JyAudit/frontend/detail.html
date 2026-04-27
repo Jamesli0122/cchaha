@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>贷款明细表</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: #f0f2f5; color: #333; }
+.container { max-width: 1400px; margin: 0 auto; padding: 24px 16px; }
+.top-bar a { color: #1890ff; text-decoration: none; font-size: 14px; }
+.top-bar a:hover { color: #1679d8; }
+.header { text-align: center; margin-bottom: 24px; }
+.header h1 { font-size: 22px; color: #1a1a2e; }
+.search-bar { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+.search-bar input, .search-bar select, .search-bar button { padding: 8px 14px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; }
+.search-bar input { width: 320px; }
+.search-bar input:focus, .search-bar select:focus { outline: none; border-color: #1890ff; box-shadow: 0 0 0 2px rgba(24,144,255,0.15); }
+.search-bar button { background: #1890ff; color: #fff; border: none; cursor: pointer; font-weight: 500; min-width: 80px; }
+.search-bar button:hover { background: #1679d8; }
+.search-bar button.export { background: #52c41a; }
+.search-bar button.export:hover { background: #49aa19; }
+.status { text-align: center; margin-bottom: 8px; font-size: 13px; color: #888; min-height: 24px; }
+.table-wrapper { overflow-x: auto; background: #fff; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+thead { background: #fafafa; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+th { font-weight: 600; color: #555; position: sticky; top: 0; background: #fafafa; }
+tr:hover td { background: #e6f7ff; }
+.pagination { display: flex; gap: 6px; justify-content: center; align-items: center; margin-top: 16px; flex-wrap: wrap; }
+.pagination button { padding: 5px 12px; border: 1px solid #d9d9d9; border-radius: 3px; background: #fff; cursor: pointer; font-size: 13px; }
+.pagination button:hover { border-color: #1890ff; color: #1890ff; }
+.pagination button:disabled { color: #bbb; cursor: not-allowed; border-color: #eee; }
+.pagination .active { background: #1890ff; color: #fff; border-color: #1890ff; }
+.pagination span { font-size: 13px; color: #888; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="top-bar"><a href="/">← 返回首页</a></div>
+  <div class="header"><h1>贷款明细表</h1></div>
+  <div class="search-bar">
+    <select id="searchType">
+      <option value="zjh">证件号</option>
+      <option value="khmc">客户名称</option>
+    </select>
+    <input id="keyword" type="text" placeholder="输入证件号或客户名称" autofocus>
+    <button onclick="doSearch(1)">查询</button>
+    <button class="export" onclick="doExport()">导出 Excel</button>
+  </div>
+  <div class="status" id="status"></div>
+  <div class="table-wrapper">
+    <table><thead><tr id="headerRow"></tr></thead><tbody id="tbody"></tbody></table>
+  </div>
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<script>
+const FIELDS = [
+  "客户名称","客户类型","客户所有权类型","证件号","客户号",
+  "借据号","借据金额","借据余额","执行利率","罚息利率",
+  "放款日期","到期日期","结清日期","投向行业","用途",
+  "担保人","担保物类型","担保方式","贷款名称","五级分类",
+  "首贷客户经理","首贷客户经理证件","客户经理","主管机构",
+  "逾期本金","表内欠息","表外欠息","欠息天数","核销标志",
+  "客户地址"
+];
+
+let total = 0, page = 1, size = 20;
+
+function renderHeader() {
+  document.getElementById('headerRow').innerHTML =
+    FIELDS.map(f => `<th>${f}</th>`).join('');
+}
+
+function renderRows(rows) {
+  const tbody = document.getElementById('tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="' + FIELDS.length + '" style="text-align:center;color:#aaa;padding:32px;">暂无数据</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r =>
+    '<tr>' + FIELDS.map(f => `<td>${r[f] ?? ''}</td>`).join('') + '</tr>'
+  ).join('');
+}
+
+function renderPagination() {
+  const pg = document.getElementById('pagination');
+  const totalPages = Math.ceil(total / size);
+  if (totalPages <= 1) { pg.innerHTML = ''; return; }
+  let html = `<span>共 ${total} 条 / ${totalPages} 页</span>`;
+  html += `<button onclick="doSearch(1)" ${page === 1 ? 'disabled' : ''}>首页</button>`;
+  html += `<button onclick="doSearch(${page - 1})" ${page === 1 ? 'disabled' : ''}>上一页</button>`;
+  for (let p = Math.max(1, page - 2); p <= Math.min(totalPages, page + 2); p++) {
+    html += `<button class="${p === page ? 'active' : ''}" onclick="doSearch(${p})">${p}</button>`;
+  }
+  html += `<button onclick="doSearch(${page + 1})" ${page === totalPages ? 'disabled' : ''}>下一页</button>`;
+  html += `<button onclick="doSearch(${totalPages})" ${page === totalPages ? 'disabled' : ''}>末页</button>`;
+  html += `<span>每页 <select onchange="size=+this.value;doSearch(1)">
+    <option value="20" ${size===20?'selected':''}>20</option>
+    <option value="50" ${size===50?'selected':''}>50</option>
+    <option value="100" ${size===100?'selected':''}>100</option>
+  </select> 条</span>`;
+  pg.innerHTML = html;
+}
+
+async function doSearch(p) {
+  page = p;
+  const q = document.getElementById('keyword').value.trim();
+  const type = document.getElementById('searchType').value;
+  if (!q) { document.getElementById('status').textContent = '请输入查询条件'; return; }
+  document.getElementById('status').textContent = '查询中…';
+  try {
+    const resp = await fetch(
+      `/api/search?q=${encodeURIComponent(q)}&type=${type}&page=${page}&size=${size}`
+    );
+    const data = await resp.json();
+    total = data.total;
+    page = data.page;
+    document.getElementById('status').textContent =
+      total > 0 ? `共找到 ${total} 条记录，当前第 ${page} 页`
+      : '未找到匹配记录';
+    renderRows(data.rows);
+    renderPagination();
+  } catch (e) {
+    document.getElementById('status').textContent = '查询失败：' + e.message;
+  }
+}
+
+function doExport() {
+  const q = document.getElementById('keyword').value.trim();
+  const type = document.getElementById('searchType').value;
+  if (!q) { document.getElementById('status').textContent = '请输入查询条件'; return; }
+  document.getElementById('status').textContent = '正在导出…';
+  window.location.href = `/api/export?q=${encodeURIComponent(q)}&type=${type}`;
+  document.getElementById('status').textContent = '导出已开始，请在下载栏查看文件';
+}
+
+document.getElementById('keyword').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch(1);
+});
+
+renderHeader();
+</script>
+</body>
+</html>
