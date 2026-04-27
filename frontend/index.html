@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>江阴贷款台账查询系统</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
+.container { max-width: 900px; margin: 0 auto; padding: 60px 16px; }
+.header { text-align: center; margin-bottom: 48px; }
+.header h1 { font-size: 26px; color: #1a1a2e; margin-bottom: 8px; }
+.header p { font-size: 14px; color: #888; }
+.cards { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+.card { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 32px 28px; width: 240px; text-align: center; cursor: pointer; transition: box-shadow 0.2s, transform 0.15s; text-decoration: none; color: inherit; display: block; }
+.card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.14); transform: translateY(-2px); }
+.card h2 { font-size: 18px; margin-bottom: 10px; color: #1a1a2e; }
+.card p { font-size: 13px; color: #888; line-height: 1.6; }
+.card .icon { font-size: 36px; margin-bottom: 16px; }
+.card.disabled { opacity: 0.45; cursor: not-allowed; }
+.card.disabled:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); transform: none; }
+.badge { display: inline-block; background: #ffa940; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>江阴贷款台账查询系统</h1>
+    <p>数据总量 4,015,071 条 | 更新至 2026 年</p>
+  </div>
+  <div class="cards">
+    <a href="/summary.html" class="card">
+      <div class="icon">📊</div>
+      <h2>江阴时点贷款汇总表</h2>
+      <p>按客户查看 2022-2026 各年末贷款余额汇总，支持按证件号码 / 客户名称查询和 Excel 导出</p>
+    </a>
+    <a href="/detail.html" class="card">
+      <div class="icon">📋</div>
+      <h2>贷款明细表</h2>
+      <p>逐笔查询贷款借据明细，包含金额、利率、担保、五级分类等 30 个字段，支持分页和 Excel 导出</p>
+    </a>
+    <div class="card disabled">
+      <div class="icon">📒</div>
+      <h2>流水分户账</h2>
+      <p>查看账户流水明细、还款记录及计息详情</p>
+      <span class="badge">即将上线</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>
